@@ -1,0 +1,9 @@
+
+welcome: 'Welcome to the mortgage calculator. You will be able to determine your monthly payments using this program. We will start with some basic questions.'
+loan: 'What is your total loan? (Eg. 40000).'
+invalid_loan: "I\'m sorry, that doesn't appear to be a valid loan number. Please try again."
+years_duration: 'How many years is your loan set for? (Eg. 12).'
+invalid_years: "I\'m sorry, that doesn't appear to be a valid length of years. Please try again."
+interest_rate: "What is your yearly interest rate? (Eg. if 5%, write 5."
+check_input: "Your loan is for $#{total_loan} over the course of #{years} years with a yearly interest rate of #{yir}%. Is this correct? (Y/N)."
+
