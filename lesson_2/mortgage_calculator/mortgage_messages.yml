@@ -6,5 +6,5 @@ years_duration: 'How many years is your loan set for? (Eg. 12).'
 invalid_years: "I\'m sorry, that doesn't appear to be a valid length of years. Please try again."
 interest_rate: "What is your yearly interest rate? (Eg. if 5%, write 5.)"
 invalid_ir: "I'm sorry, please enter your interest rate in this format: 4.42."
-check_input: "Your loan is for $#{total_loan} over the course of #{years} years with a yearly interest rate of #{yir}%. Is this correct? (Y/N)."
+#check_input: "Your loan is for $#{total_loan} over the course of #{years} years with a yearly interest rate of #{yir}%. Is this correct? (Y/N)."
 
