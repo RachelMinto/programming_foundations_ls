@@ -9,6 +9,22 @@ def clear_screen
   system('clear') || system('cls')
 end
 
+def validate_loan(ans)
+  if ans == '0'
+    puts "Please enter a loan amount greater than $0."
+  elsif ans.to_i.to_s != ans
+    puts MESSAGES['invalid_loan']
+  end
+end
+
+def validate_duration(years)
+  if years == '0'
+    puts "Please enter a loan duration greater than 0 years."
+  elsif years.to_i.to_s != years
+    puts MESSAGES['invalid_years']
+  end
+end
+
 prompt(MESSAGES['welcome'])
 
 total_loan = ''
@@ -20,8 +36,8 @@ loop do
     prompt(MESSAGES['loan'])
     total_loan = gets.chomp
     total_loan.delete!(",$")
-    break unless total_loan.to_i.to_s != total_loan
-    puts MESSAGES['invalid_loan']
+    validate_loan(total_loan)
+    break if total_loan.to_i.to_s == total_loan && total_loan != '0'
   end
 
   clear_screen
@@ -29,8 +45,8 @@ loop do
   loop do
     prompt(MESSAGES['years_duration'])
     years = gets.chomp
-    break unless years.to_f.to_s != years && years.to_i.to_s != years
-    puts MESSAGES['invalid_years']
+    validate_duration(years)
+    break if years.to_f.to_s == years || years.to_i.to_s == years && years != '0'
   end
 
   clear_screen
@@ -43,7 +59,7 @@ loop do
   end
 
   clear_screen
-  prompt("Your loan is for $#{total_loan} over the course of #{years} years with a yearly interest rate of #{yearly_interest_rate}%. Is this correct? (Y/N).")
+  prompt("Your loan is for $#{total_loan} over the course of #{years} year(s) with a yearly interest rate of #{yearly_interest_rate}%. Is this correct? (Y/N).")
   validation = gets.chomp
   break unless validation.downcase.start_with?("n")
   puts 'Let\'s try again.'
