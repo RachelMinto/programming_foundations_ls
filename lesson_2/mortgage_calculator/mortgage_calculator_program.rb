@@ -46,7 +46,7 @@ loop do
     prompt(MESSAGES['years_duration'])
     years = gets.chomp
     validate_duration(years)
-    break if (years.to_f.to_s == years && years.to_i > 0) || (years.to_i.to_s == years && years != '0' && years.to_i > 0 )
+    break if (years.to_f.to_s == years && years.to_i > 0) || (years.to_i.to_s == years && years != '0' && years.to_i > 0)
   end
 
   clear_screen
@@ -59,7 +59,6 @@ loop do
   end
 
   clear_screen
-  #prompt("Your loan is for $#{total_loan} over the course of #{years} year(s) with a yearly interest rate of #{yearly_interest_rate}%. Is this correct? (Y/N).")
   puts format(MESSAGES['check_input'], total_loan, years, yearly_interest_rate)
   validation = gets.chomp
   break unless validation.downcase.start_with?("n")
