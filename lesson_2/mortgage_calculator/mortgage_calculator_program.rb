@@ -10,7 +10,7 @@ def clear_screen
 end
 
 def validate_loan(ans)
-  if ans == '0'
+  if ans.to_i < 0 || ans == "0"
     puts "Please enter a loan amount greater than $0."
   elsif ans.to_i.to_s != ans
     puts MESSAGES['invalid_loan']
@@ -18,7 +18,7 @@ def validate_loan(ans)
 end
 
 def validate_duration(years)
-  if years == '0'
+  if years.to_i < 0 || years == '0'
     puts "Please enter a loan duration greater than 0 years."
   elsif years.to_i.to_s != years
     puts MESSAGES['invalid_years']
@@ -37,7 +37,7 @@ loop do
     total_loan = gets.chomp
     total_loan.delete!(",$")
     validate_loan(total_loan)
-    break if total_loan.to_i.to_s == total_loan && total_loan != '0'
+    break if total_loan.to_i.to_s == total_loan && total_loan.to_i > 0
   end
 
   clear_screen
@@ -46,7 +46,7 @@ loop do
     prompt(MESSAGES['years_duration'])
     years = gets.chomp
     validate_duration(years)
-    break if years.to_f.to_s == years || years.to_i.to_s == years && years != '0'
+    break if (years.to_f.to_s == years && years.to_i > 0) || (years.to_i.to_s == years && years != '0' && years.to_i > 0 )
   end
 
   clear_screen
@@ -54,12 +54,13 @@ loop do
   loop do
     prompt(MESSAGES['interest_rate'])
     yearly_interest_rate = gets.chomp
-    break unless yearly_interest_rate.to_f.to_s != yearly_interest_rate && yearly_interest_rate.to_i.to_s != yearly_interest_rate
+    break if yearly_interest_rate.to_f.to_s == yearly_interest_rate || yearly_interest_rate.to_i.to_s == yearly_interest_rate
     puts MESSAGES['invalid_ir']
   end
 
   clear_screen
-  prompt("Your loan is for $#{total_loan} over the course of #{years} year(s) with a yearly interest rate of #{yearly_interest_rate}%. Is this correct? (Y/N).")
+  #prompt("Your loan is for $#{total_loan} over the course of #{years} year(s) with a yearly interest rate of #{yearly_interest_rate}%. Is this correct? (Y/N).")
+  puts format(MESSAGES['check_input'], total_loan, years, yearly_interest_rate)
   validation = gets.chomp
   break unless validation.downcase.start_with?("n")
   puts 'Let\'s try again.'
