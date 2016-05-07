@@ -8,17 +8,16 @@ WINNING_LINES = [[1, 2, 3], [4, 5, 6], [7, 8, 9]] +
                 [[1, 4, 7], [2, 5, 8], [3, 6, 9]] +
                 [[1, 5, 9], [3, 5, 7]]
 
-def immediate_threat?(brd, slot=false)
-  compare_to_test = ['X', 'X', ' ']
+def immediate_threat?(brd, slot=false, marker)
+  compare_to_test = [marker, marker, ' ']
   test = []
   WINNING_LINES.each do |trio|
-    trio.each { |place_holder| test.unshift(brd[place_holder]) }
-    if
-      test.sort == compare_to_test.sort
-      slot = trio.find_index(' ')
-      binding.pry
+    trio.each { |place_holder| test.push(brd[place_holder]) }
+    if test.sort == compare_to_test.sort
+      slot = trio[test.find_index(' ')]
       break
     end
+    test = []
   end
   slot
 end
@@ -72,9 +71,12 @@ def player_places_piece!(brd)
 end
 
 def computer_places_piece!(brd)
-  if !!immediate_threat?(brd)
-    puts "true"
-    square = immediate_threat?(brd)
+  if !!immediate_threat?(brd, COMPUTER_MARKER)
+    square = immediate_threat?(brd, COMPUTER_MARKER)
+  elsif !!immediate_threat?(brd, PLAYER_MARKER)
+    square = immediate_threat?(brd, PLAYER_MARKER)
+  elsif brd[5] == INITIAL_MARKER
+    square = 5
   else
     square = empty_squares(brd).sample
   end
