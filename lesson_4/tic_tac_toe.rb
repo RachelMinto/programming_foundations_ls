@@ -172,6 +172,7 @@ loop do
   computer_score = [0]
   loop do
     board = initialize_board
+    prompt "Welcome to Tic Tac Toe. Each match will be best out of 5."
     who_starts = get_starter(STARTER)
 
     take_turns(who_starts, board, player_score, computer_score)
