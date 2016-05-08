@@ -8,6 +8,11 @@ WINNING_LINES = [[1, 2, 3], [4, 5, 6], [7, 8, 9]] +
                 [[1, 4, 7], [2, 5, 8], [3, 6, 9]] +
                 [[1, 5, 9], [3, 5, 7]]
 
+#With STARTER set to 'choose', user gets to decide who will take the first turn.
+#Can also set STARTER = 'Player' or 'Computer' to make it a default selection.
+STARTER = 'choose'
+
+  #if 2 of 3 winning lines arrays are x and the third is empty, return third slot.
 def immediate_threat?(brd, slot=false, marker)
   compare_to_test = [marker, marker, ' ']
   test = []
@@ -21,8 +26,6 @@ def immediate_threat?(brd, slot=false, marker)
   end
   slot
 end
-  #if 2 of 3 winning lines arrays are x and the third is empty, return third slot.
-
 
 def prompt(string)
   puts "=>" + string
@@ -83,6 +86,42 @@ def computer_places_piece!(brd)
   brd[square] = COMPUTER_MARKER
 end
 
+def set_starter(starter)
+  if starter == 'choose'
+    prompt "Would you like to start? (Y or N). Otherwise the Computer will take the first turn."
+    ans = gets.chomp
+    return 'Player' if ans.downcase.start_with?('y') 
+    'Computer'
+  else
+    starter
+  end
+end
+
+def alternate_player(current_player)
+  if current_player == 'Player'
+    current_player = 'Computer'
+  else
+    current_player = 'Player'
+  end
+end
+
+def place_piece!(board, current_player)
+  if current_player == 'Player'
+    player_places_piece!(board) 
+  else 
+    computer_places_piece!(board)
+  end
+end
+
+def take_turns(current_player, board, player_score, computer_score)
+  loop do
+    display_board(board, player_score, computer_score)  
+    place_piece!(board, current_player)
+    current_player = alternate_player(current_player)
+    break if someone_won?(board) || board_full?(board)
+  end
+end
+
 def board_full?(brd)
   empty_squares(brd).empty?
 end
@@ -122,16 +161,9 @@ loop do
   computer_score = [0]
   loop do
     board = initialize_board
+    who_starts = set_starter(STARTER)
 
-    loop do
-      display_board(board, player_score, computer_score)
-
-      player_places_piece!(board)
-      break if someone_won?(board) || board_full?(board)
-
-      computer_places_piece!(board)
-      break if someone_won?(board) || board_full?(board)
-    end
+    take_turns(who_starts, board, player_score, computer_score)
 
     if someone_won?(board)
       update_score(board, player_score, computer_score)
