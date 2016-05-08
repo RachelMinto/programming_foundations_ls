@@ -6,14 +6,14 @@ PLAYER_MARKER = 'X'.freeze
 COMPUTER_MARKER = 'O'.freeze
 WINNING_LINES = [[1, 2, 3], [4, 5, 6], [7, 8, 9]] +
                 [[1, 4, 7], [2, 5, 8], [3, 6, 9]] +
-                [[1, 5, 9], [3, 5, 7]]
+                [[1, 5, 9], [3, 5, 7]].freeze
 
-#With STARTER set to 'choose', user gets to decide who will take the first turn.
-#Can also set STARTER = 'Player' or 'Computer' to make it a default selection.
-STARTER = 'choose'
+# With STARTER set to 'choose', user gets to decide who will take the first turn.
+# Can also set STARTER = 'Player' or 'Computer' to make it a default selection.
+STARTER = 'choose'.freeze
 
-  #if 2 of 3 winning lines arrays are x and the third is empty, return third slot.
-def immediate_threat?(brd, slot=false, marker)
+# if 2 of 3 winning lines arrays are x and the third is empty, return third slot.
+def immediate_threat?(brd, marker, slot=false)
   compare_to_test = [marker, marker, ' ']
   test = []
   WINNING_LINES.each do |trio|
@@ -31,7 +31,7 @@ def prompt(string)
   puts "=>" + string
 end
 
-# rubocop.disable Metrics/MethodLength, Metrics/AbcSize
+# rubocop:disable Metrics/MethodLength, Metrics/AbcSize
 def display_board(brd, player_score, computer_score)
   system('clear') || system('cls')
   puts "You're an #{PLAYER_MARKER}. The Computer is a #{COMPUTER_MARKER}."
@@ -50,7 +50,7 @@ def display_board(brd, player_score, computer_score)
   puts "     |     |"
   puts ""
 end
-# rubocop.enable Metrics/MethodLength, Metrics/AbcSize
+# rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
 def initialize_board
   new_board = {}
@@ -74,23 +74,33 @@ def player_places_piece!(brd)
 end
 
 def computer_places_piece!(brd)
-  if !!immediate_threat?(brd, COMPUTER_MARKER)
-    square = immediate_threat?(brd, COMPUTER_MARKER)
-  elsif !!immediate_threat?(brd, PLAYER_MARKER)
-    square = immediate_threat?(brd, PLAYER_MARKER)
-  elsif brd[5] == INITIAL_MARKER
-    square = 5
-  else
-    square = empty_squares(brd).sample
-  end
+  square = if !!immediate_threat?(brd, COMPUTER_MARKER)
+             immediate_threat?(brd, COMPUTER_MARKER)
+           elsif !!immediate_threat?(brd, PLAYER_MARKER)
+             immediate_threat?(brd, PLAYER_MARKER)
+           elsif brd[5] == INITIAL_MARKER
+             5
+           else
+             empty_squares(brd).sample
+           end
   brd[square] = COMPUTER_MARKER
 end
 
-def set_starter(starter)
+def validate_answer(ans)
+  loop do
+    break unless !ans.downcase.start_with?('y', 'n')
+    prompt "Please respond with either Y or N."
+    ans = gets.chomp
+  end
+  ans
+end
+
+def get_starter(starter)
   if starter == 'choose'
     prompt "Would you like to start? (Y or N). Otherwise the Computer will take the first turn."
     ans = gets.chomp
-    return 'Player' if ans.downcase.start_with?('y') 
+    final_ans = validate_answer(ans)
+    return 'Player' if final_ans.downcase.start_with?('y')
     'Computer'
   else
     starter
@@ -98,24 +108,25 @@ def set_starter(starter)
 end
 
 def alternate_player(current_player)
-  if current_player == 'Player'
-    current_player = 'Computer'
-  else
-    current_player = 'Player'
-  end
+  current_player = if current_player == 'Player'
+                     'Computer'
+                   else
+                     'Player'
+                   end
+  current_player
 end
 
 def place_piece!(board, current_player)
   if current_player == 'Player'
-    player_places_piece!(board) 
-  else 
+    player_places_piece!(board)
+  else
     computer_places_piece!(board)
   end
 end
 
 def take_turns(current_player, board, player_score, computer_score)
   loop do
-    display_board(board, player_score, computer_score)  
+    display_board(board, player_score, computer_score)
     place_piece!(board, current_player)
     current_player = alternate_player(current_player)
     break if someone_won?(board) || board_full?(board)
@@ -152,7 +163,7 @@ end
 def joinor(array, seperator=', ', conjunction='and')
   return array if array.length == 1
   all_but_last = ""
-  array[0..(array.length-2)].each { |num| all_but_last << num.to_s + seperator }
+  array[0..(array.length - 2)].each { |num| all_but_last << num.to_s + seperator }
   all_but_last + conjunction + " " + array.last.to_s
 end
 
@@ -161,13 +172,14 @@ loop do
   computer_score = [0]
   loop do
     board = initialize_board
-    who_starts = set_starter(STARTER)
+    who_starts = get_starter(STARTER)
 
     take_turns(who_starts, board, player_score, computer_score)
 
     if someone_won?(board)
       update_score(board, player_score, computer_score)
       prompt "#{detect_winner(board)} won!"
+      display_board(board, player_score, computer_score)
     else
       prompt "It's a tie!"
     end
@@ -175,13 +187,16 @@ loop do
     break if player_score.last == 5 || computer_score.last == 5
     display_board(board, player_score, computer_score)
   end
-  
+
   if player_score.last == 5
-    prompt "Congratulations! You have won 5 matches against the computer. Would you like to play another match? (y or n)"
+    prompt "Congratulations! You have won 5 matches against the computer."
+    prompt "Would you like to play another match? (y or n)"
     break unless gets.chomp.downcase.start_with?('y')
   elsif computer_score.last == 5
     prompt "Too bad! The computer has won this match. Would you like to play again? (y or n)."
-    break unless gets.chomp.downcase.start_with?('y')
+    ans = gets.chomp
+    final_ans = validate_answer(ans)
+    break unless final_ans.downcase.start_with?('y')
   end
 end
 
