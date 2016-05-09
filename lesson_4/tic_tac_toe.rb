@@ -7,25 +7,11 @@ COMPUTER_MARKER = 'O'.freeze
 WINNING_LINES = [[1, 2, 3], [4, 5, 6], [7, 8, 9]] +
                 [[1, 4, 7], [2, 5, 8], [3, 6, 9]] +
                 [[1, 5, 9], [3, 5, 7]].freeze
+WINNING_SCORE = 5
 
 # With STARTER set to 'choose', user gets to decide who will take the first turn.
 # Can also set STARTER = 'Player' or 'Computer' to make it a default selection.
 STARTER = 'choose'.freeze
-
-# if 2 of 3 winning lines arrays are x and the third is empty, return third slot.
-def immediate_threat?(brd, marker, slot=false)
-  compare_to_test = [marker, marker, ' ']
-  test = []
-  WINNING_LINES.each do |trio|
-    trio.each { |place_holder| test.push(brd[place_holder]) }
-    if test.sort == compare_to_test.sort
-      slot = trio[test.find_index(' ')]
-      break
-    end
-    test = []
-  end
-  slot
-end
 
 def prompt(string)
   puts "=>" + string
@@ -35,7 +21,8 @@ end
 def display_board(brd, player_score, computer_score)
   system('clear') || system('cls')
   puts "You're an #{PLAYER_MARKER}. The Computer is a #{COMPUTER_MARKER}."
-  puts "You have won #{player_score.last} games and the Computer has won #{computer_score.last}"
+  puts "You have won #{player_score.last} games and\
+  the Computer has won #{computer_score.last}"
   puts ""
   puts "     |     |"
   puts "  #{brd[1]}  |  #{brd[2]}  |  #{brd[3]}"
@@ -62,6 +49,28 @@ def empty_squares(brd)
   brd.keys.select { |num| brd[num] == INITIAL_MARKER }
 end
 
+def immediate_threat?(brd, marker)
+  WINNING_LINES.each do |line| 
+    !!find_at_risk_square(line, brd, marker) 
+  end
+end
+
+def find_at_risk_square(line, board, marker)
+  if board.values_at(*line).count(marker) == 2
+    board.select { |k, v| line.include?(k) && v == INITIAL_MARKER }.keys.first
+  else
+    nil
+  end
+end
+
+def find_odd_open_squares(brd)
+  choices = []
+  brd.each_with_index do |index, value| 
+    choices.push(index[0]) if index[1] == INITIAL_MARKER && index[0].odd?
+  end
+  choices.sample
+end
+
 def player_places_piece!(brd)
   square = ''
   loop do
@@ -74,21 +83,23 @@ def player_places_piece!(brd)
 end
 
 def computer_places_piece!(brd)
-  square = if !!immediate_threat?(brd, COMPUTER_MARKER)
-             immediate_threat?(brd, COMPUTER_MARKER)
-           elsif !!immediate_threat?(brd, PLAYER_MARKER)
-             immediate_threat?(brd, PLAYER_MARKER)
+  square = if immediate_threat?(brd, COMPUTER_MARKER)
+             WINNING_LINES.each { |line| find_at_risk_square(line, brd, COMPUTER_MARKER) }
+           elsif immediate_threat?(brd, PLAYER_MARKER)
+             WINNING_LINES.each { |line| find_at_risk_square(line, brd, PLAYER_MARKER) }
            elsif brd[5] == INITIAL_MARKER
              5
+           elsif !!find_odd_open_squares(brd)
+             find_odd_open_squares(brd)  
            else
              empty_squares(brd).sample
-           end
+  end
   brd[square] = COMPUTER_MARKER
 end
 
 def validate_answer(ans)
   loop do
-    break unless !ans.downcase.start_with?('y', 'n')
+    break if ans.downcase.start_with?('y', 'n')
     prompt "Please respond with either Y or N."
     ans = gets.chomp
   end
@@ -97,7 +108,7 @@ end
 
 def get_starter(starter)
   if starter == 'choose'
-    prompt "Would you like to start? (Y or N). Otherwise the Computer will take the first turn."
+    prompt "Would you like to start? (Y or N)."
     ans = gets.chomp
     final_ans = validate_answer(ans)
     return 'Player' if final_ans.downcase.start_with?('y')
@@ -108,12 +119,7 @@ def get_starter(starter)
 end
 
 def alternate_player(current_player)
-  current_player = if current_player == 'Player'
-                     'Computer'
-                   else
-                     'Player'
-                   end
-  current_player
+  current_player == 'Player' ? 'Computer' : 'Player'
 end
 
 def place_piece!(board, current_player)
@@ -172,7 +178,7 @@ loop do
   computer_score = [0]
   loop do
     board = initialize_board
-    prompt "Welcome to Tic Tac Toe. Each match will be best out of 5."
+    prompt "Welcome to Tic Tac Toe. Each match will be best out of #{WINNING_SCORE}."
     who_starts = get_starter(STARTER)
 
     take_turns(who_starts, board, player_score, computer_score)
@@ -185,20 +191,23 @@ loop do
       prompt "It's a tie!"
     end
 
-    break if player_score.last == 5 || computer_score.last == 5
+    break if player_score.last == WINNING_SCORE || computer_score.last == WINNING_SCORE
     display_board(board, player_score, computer_score)
   end
 
-  if player_score.last == 5
-    prompt "Congratulations! You have won 5 matches against the computer."
+  if player_score.last == WINNING_SCORE
+    prompt "Congratulations! You have won #{WINNING_SCORE} matches against the computer."
     prompt "Would you like to play another match? (y or n)"
-    break unless gets.chomp.downcase.start_with?('y')
-  elsif computer_score.last == 5
-    prompt "Too bad! The computer has won this match. Would you like to play again? (y or n)."
     ans = gets.chomp
     final_ans = validate_answer(ans)
-    break unless final_ans.downcase.start_with?('y')
+    break if final_ans.downcase.start_with?('n')
+  elsif computer_score.last == WINNING_SCORE
+    prompt "Too bad. The computer has won this match.\
+    Would you like to play again? (y or n)."
+    ans = gets.chomp
+    final_ans = validate_answer(ans)
+    break if final_ans.downcase.start_with?('n')
   end
 end
 
-prompt "Thanks for playing Tic Tac Toe! Good bye!"
+prompt "Thanks for playing Tic Tac Toe. Good bye!"
