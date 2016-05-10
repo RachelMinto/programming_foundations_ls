@@ -50,9 +50,13 @@ def empty_squares(brd)
 end
 
 def immediate_threat?(brd, marker)
+  square = nil
+
   WINNING_LINES.each do |line| 
-    !!find_at_risk_square(line, brd, marker) 
+    square = find_at_risk_square(line, brd, marker)
+    break if square
   end
+  square
 end
 
 def find_at_risk_square(line, board, marker)
@@ -84,12 +88,12 @@ end
 
 def computer_places_piece!(brd)
   square = if immediate_threat?(brd, COMPUTER_MARKER)
-             WINNING_LINES.each { |line| find_at_risk_square(line, brd, COMPUTER_MARKER) }
+             immediate_threat?(brd, COMPUTER_MARKER)
            elsif immediate_threat?(brd, PLAYER_MARKER)
-             WINNING_LINES.each { |line| find_at_risk_square(line, brd, PLAYER_MARKER) }
+             immediate_threat?(brd, PLAYER_MARKER)
            elsif brd[5] == INITIAL_MARKER
              5
-           elsif !!find_odd_open_squares(brd)
+           elsif find_odd_open_squares(brd)
              find_odd_open_squares(brd)  
            else
              empty_squares(brd).sample
@@ -173,14 +177,14 @@ def joinor(array, seperator=', ', conjunction='and')
   all_but_last + conjunction + " " + array.last.to_s
 end
 
+prompt "Welcome to Tic Tac Toe. Each match will be best out of #{WINNING_SCORE}."
+
 loop do
   player_score = [0]
   computer_score = [0]
   loop do
     board = initialize_board
-    prompt "Welcome to Tic Tac Toe. Each match will be best out of #{WINNING_SCORE}."
     who_starts = get_starter(STARTER)
-
     take_turns(who_starts, board, player_score, computer_score)
 
     if someone_won?(board)
