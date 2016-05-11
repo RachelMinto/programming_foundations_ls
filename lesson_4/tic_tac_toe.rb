@@ -19,7 +19,6 @@ end
 
 # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
 def display_board(brd, player_score, computer_score)
-  system('clear') || system('cls')
   puts "You're an #{PLAYER_MARKER}. The Computer is a #{COMPUTER_MARKER}."
   puts "You have won #{player_score.last} games and\
   the Computer has won #{computer_score.last}"
@@ -67,12 +66,29 @@ def find_at_risk_square(line, board, marker)
   end
 end
 
-def find_odd_open_squares(brd)
+def find_better_open_square(brd, choices, marker)
+  test_choice_on_board = brd.clone
+  best_choices = []
+  choices.each do |open_square|
+    test_choice_on_board[open_square] = marker
+    best_choices.push(open_square) if immediate_threat?(test_choice_on_board, marker)
+    test_choice_on_board = brd.clone
+  end
+  best_choices.sample
+end
+
+def find_odd_open_squares(brd, marker)
   choices = []
   brd.each_with_index do |index, value| 
     choices.push(index[0]) if index[1] == INITIAL_MARKER && index[0].odd?
   end
-  choices.sample
+
+  if find_better_open_square(brd, choices, marker)
+    find_better_open_square(brd, choices, marker)
+  else
+    choices.sample
+  end
+
 end
 
 def player_places_piece!(brd)
@@ -93,8 +109,8 @@ def computer_places_piece!(brd)
              immediate_threat?(brd, PLAYER_MARKER)
            elsif brd[5] == INITIAL_MARKER
              5
-           elsif find_odd_open_squares(brd)
-             find_odd_open_squares(brd)  
+           elsif find_odd_open_squares(brd, COMPUTER_MARKER)
+             find_odd_open_squares(brd, COMPUTER_MARKER) 
            else
              empty_squares(brd).sample
   end
@@ -136,6 +152,7 @@ end
 
 def take_turns(current_player, board, player_score, computer_score)
   loop do
+    system 'clear' or system 'cls'
     display_board(board, player_score, computer_score)
     place_piece!(board, current_player)
     current_player = alternate_player(current_player)
@@ -189,9 +206,10 @@ loop do
 
     if someone_won?(board)
       update_score(board, player_score, computer_score)
+      system 'clear' or system 'cls'
       prompt "#{detect_winner(board)} won!"
-      display_board(board, player_score, computer_score)
     else
+      system 'clear' or system 'cls'
       prompt "It's a tie!"
     end
 
@@ -200,7 +218,8 @@ loop do
   end
 
   if player_score.last == WINNING_SCORE
-    prompt "Congratulations! You have won #{WINNING_SCORE} matches against the computer."
+    prompt "Congratulations! You have won #{WINNING_SCORE} matches\ 
+ against the computer."
     prompt "Would you like to play another match? (y or n)"
     ans = gets.chomp
     final_ans = validate_answer(ans)
