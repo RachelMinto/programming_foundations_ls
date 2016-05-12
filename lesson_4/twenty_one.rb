@@ -3,14 +3,15 @@ require 'pry'
 DECK = [['Hearts', 'Diamonds', 'Spades', 'Clubs'], ['2', '3', '4', '5', '6', \
 '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']].freeze
 
-INSTRUCTIONS = <<-msg 
-Both you and the Dealer will begin with two cards.
-You will see both of your cards and will see one of the Dealer's.
-You will be able to request cards until either you call 'stay' or you 'bust' by 
-going above 21 points.
-If you call 'stay', the Dealer will have an opportunity to try to beat you.
-The Dealer must have at least 17 points before they can call 'stay'.
-msg
+INSTRUCTIONS = <<-MSG 
+Both the player and the Dealer will begin with two cards.
+The player will see both of their cards and will see one of the dealer's.
+The player will be able to request cards until either they call 'stay' or they
+'bust' by going above 21 points.
+If the player calls 'stay', the dealer will have an opportunity to try to beat
+the player's ending total.
+The dealer must have at least 17 points before they can call 'stay'.
+MSG
 
 def prompt(str)
   puts "=> #{str}"
@@ -34,6 +35,15 @@ def validate_h_or_s
     MSG
     puts INSTRUCTIONS if ans.downcase.start_with?('i')
     prompt "Would you like to hit (H) or stay (S)?" 
+  end
+end
+
+def validate_s
+  prompt "The dealer must have at least 17 points to stay so you must hit."
+  loop do
+    prompt "Please press H when you are ready to hit."
+    hit_ans = gets.chomp
+    break if hit_ans.downcase.start_with?('h')
   end
 end
 
@@ -66,14 +76,16 @@ def display_cards(player_hand, other_hand, whose_turn)
   player_hand.each { |card| cards.push(card_desc(card)) }
   other_hand.each { |card| other_cards.push(card_desc(card)) }
   if cards.length == 2 
-    puts "You, the #{whose_turn}, are dealt the following cards: " + cards.first + " and the " + cards.last 
+    puts "You, the #{whose_turn}, are dealt the " + cards.first + \
+    " and the " + cards.last 
   else
     puts "You, the #{whose_turn}, now have the " + joinor(cards) 
   end
-  if whose_turn == 'Player'
-    puts "The Dealer has two cards, one of which is the " + card_desc(other_hand.first)
+  if whose_turn == 'player'
+    puts "The dealer has two cards, one of which is the " \
+    + card_desc(other_hand.first)
   else
-    puts "The Player stayed with the following cards: " + joinor(other_cards)
+    puts "The player stayed with the following cards: " + joinor(other_cards)
   end
 end
 
@@ -90,20 +102,26 @@ def total_cards(hand)
            end
     sum
   end
-
-  def take_turn(player)
-  end
   
   values.select { |value| value == "Ace" }.count.times do 
     sum -= 10 if sum > 21
   end
-
   sum
 end
 
 def bust?(hand)
   !!(total_cards(hand) > 21)
 end
+
+def display_winner(player_hand, dealer_hand)
+  if total_cards(player_hand) == total_cards(dealer_hand)
+    prompt "It's a tie!"
+  else
+    winner = total_cards(player_hand) > total_cards(dealer_hand) ? "player" : "dealer"
+    prompt "The #{winner} won this round!"
+  end
+end
+
 
 prompt "Thank you for playing Twenty-One."
 
@@ -125,36 +143,55 @@ loop do
 
   loop do
     system('clear') || system('cls')
-    display_cards(player_hand, dealer_hand, 'Player')
+    display_cards(player_hand, dealer_hand, 'player')
     total_cards(player_hand)
     prompt "Would you like to hit or stay? (Please type H or S)"  
     ans = validate_h_or_s
     break if ans.start_with?('s')
     player_hand.push(deal_card(dealt_cards))
+
     if bust?(player_hand)
       system('clear') || system('cls')
-      display_cards(player_hand, dealer_hand, 'Player')
+      display_cards(player_hand, dealer_hand, 'player')
       break
     end
+
   end
 
   if bust?(player_hand)
-    prompt "Too bad! You've busted."
+    prompt "Too bad! You've busted. The dealer wins this game."
   else
-    prompt "You've chosen to stay. Now it's the Dealer's turn."
+    prompt "You've chosen to stay. Now it's the dealer's turn."
+  end
+
+  unless bust?(player_hand)
     loop do
-      next_move_ans = ''
       break if bust?(dealer_hand)
       system('clear') || system('cls')
       display_cards(dealer_hand, player_hand, 'Dealer')
       total_cards(dealer_hand)
       prompt "Would you like to hit or stay? (Please type H or S)"  
       next_move_ans = validate_h_or_s
-      break if next_move_ans.downcase.start_with?('s')
+
+      if next_move_ans.downcase.start_with?('s')
+        if total_cards(dealer_hand) >= 17
+          break
+        else
+          validate_s
+        end
+      end
+
       dealer_hand.push(deal_card(dealt_cards))
     end
+
+    if bust?(dealer_hand)
+      display_cards(dealer_hand, player_hand, 'Dealer')
+      prompt "Too bad! You've busted. The player wins this game."
+    else
+      display_winner(player_hand, dealer_hand)
+    end
   end
-  
+
   prompt "Would you like to play again? (Please enter Y or N)"
   play_again_ans = validate_answer
   break if play_again_ans.downcase.start_with?("n")
