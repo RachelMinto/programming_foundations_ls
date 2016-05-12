@@ -4,7 +4,7 @@ DECK = [['Hearts', 'Diamonds', 'Spades', 'Clubs'], ['2', '3', '4', '5', '6', \
 '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']].freeze
 
 INSTRUCTIONS = <<-MSG 
-Both the player and the Dealer will begin with two cards.
+Both the player and the dealer will begin with two cards.
 The player will see both of their cards and will see one of the dealer's.
 The player will be able to request cards until either they call 'stay' or they
 'bust' by going above 21 points.
@@ -33,27 +33,33 @@ def validate_h_or_s
     Please respond with either H (hit) or S (stay). If you need to see 
     the instructions again, please type I.
     MSG
+
     puts INSTRUCTIONS if ans.downcase.start_with?('i')
     prompt "Would you like to hit (H) or stay (S)?" 
+
   end
 end
 
 def validate_s
   prompt "The dealer must have at least 17 points to stay so you must hit."
+
   loop do
     prompt "Please press H when you are ready to hit."
     hit_ans = gets.chomp
     break if hit_ans.downcase.start_with?('h')
   end
+
 end
 
 def deal_card(dealt_cards)
   card_coordinates = []
   card = ''
+
   loop do
     card = card_coordinates.push(rand(4), rand(13))
     break unless dealt_cards.include?(card)
   end
+
   dealt_cards.push(card)
   card
 end
@@ -75,23 +81,27 @@ def display_cards(player_hand, other_hand, whose_turn)
   other_cards = []
   player_hand.each { |card| cards.push(card_desc(card)) }
   other_hand.each { |card| other_cards.push(card_desc(card)) }
+
   if cards.length == 2 
     puts "You, the #{whose_turn}, are dealt the " + cards.first + \
     " and the " + cards.last 
   else
     puts "You, the #{whose_turn}, now have the " + joinor(cards) 
   end
+
   if whose_turn == 'player'
     puts "The dealer has two cards, one of which is the " \
     + card_desc(other_hand.first)
   else
     puts "The player stayed with the following cards: " + joinor(other_cards)
   end
+
 end
 
 def total_cards(hand)
   values = hand.map { |suit, value| DECK[1][value] }
   sum = 0
+
   values.each do |value|
     sum += if value == "Ace"  
              11
@@ -110,16 +120,22 @@ def total_cards(hand)
 end
 
 def bust?(hand)
-  !!(total_cards(hand) > 21)
+  total = total_cards(hand) 
+  total > 21
+  binding.pry
 end
 
-def display_winner(player_hand, dealer_hand)
-  if total_cards(player_hand) == total_cards(dealer_hand)
+def display_winner(p_hand, d_hand)
+  if total_cards(p_hand) == total_cards(d_hand)
     prompt "It's a tie!"
   else
-    winner = total_cards(player_hand) > total_cards(dealer_hand) ? "player" : "dealer"
-    prompt "The #{winner} won this round!"
-  end
+    winner = total_cards(p_hand) > total_cards(d_hand) ? "player" : "dealer"
+    if winner == "player"
+      prompt "The #{winner} won this round with #{total_cards(player_hand)}"
+    else
+      prompt "The #{winner} won this round with #{total_cards(dealer_hand)}"
+    end
+  end 
 end
 
 
@@ -159,7 +175,7 @@ loop do
   end
 
   if bust?(player_hand)
-    prompt "Too bad! You've busted. The dealer wins this game."
+    prompt "Too bad! You've busted with #{total_cards(player_hand)}. The dealer wins this game."
   else
     prompt "You've chosen to stay. Now it's the dealer's turn."
   end
@@ -168,7 +184,7 @@ loop do
     loop do
       break if bust?(dealer_hand)
       system('clear') || system('cls')
-      display_cards(dealer_hand, player_hand, 'Dealer')
+      display_cards(dealer_hand, player_hand, 'dealer')
       total_cards(dealer_hand)
       prompt "Would you like to hit or stay? (Please type H or S)"  
       next_move_ans = validate_h_or_s
@@ -185,8 +201,8 @@ loop do
     end
 
     if bust?(dealer_hand)
-      display_cards(dealer_hand, player_hand, 'Dealer')
-      prompt "Too bad! You've busted. The player wins this game."
+      display_cards(dealer_hand, player_hand, 'dealer')
+      prompt "Too bad! You've busted with #{total_cards(dealer_hand)}. The player wins this game."
     else
       display_winner(player_hand, dealer_hand)
     end
