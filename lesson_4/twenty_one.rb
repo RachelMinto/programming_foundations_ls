@@ -3,9 +3,9 @@ DECK = [['Hearts', 'Diamonds', 'Spades', 'Clubs'],
         ['2', '3', '4', '5', '6', \
          '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']].freeze
 
-MAX_ALLOWED_POINTS = 21.freeze
-DEALER_MIN = 17.freeze
-WINNING_SCORE = 5.freeze
+MAX_ALLOWED_POINTS = 21
+DEALER_MIN = 17
+WINNING_SCORE = 5
 
 INSTRUCTIONS = <<-MSG
 
@@ -183,7 +183,7 @@ puts INSTRUCTIONS
 
 loop do
   score = { player: 0, dealer: 0 }
-  
+
   loop do
     prompt "Please press S when you are ready to start the round."
     start_answer = gets.chomp
