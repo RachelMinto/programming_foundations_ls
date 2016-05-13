@@ -3,14 +3,21 @@ DECK = [['Hearts', 'Diamonds', 'Spades', 'Clubs'],
         ['2', '3', '4', '5', '6', \
          '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']].freeze
 
+MAX_ALLOWED_POINTS = 21.freeze
+DEALER_MIN = 17.freeze
+WINNING_SCORE = 5.freeze
+
 INSTRUCTIONS = <<-MSG
+
 Both the player and the dealer will begin with two cards.
 The player will see both of their cards and will see one of the dealer's.
 The player will be able to request cards until either they call 'stay' or they
-'bust' by going above 21 points.
+'bust' by going above #{MAX_ALLOWED_POINTS} points.
 If the player calls 'stay', the dealer will have an opportunity to try to beat
 the player's ending total.
-The dealer must have at least 17 points before they can call 'stay'.
+The dealer must have at least #{DEALER_MIN} points before they can call 'stay'.
+You must win #{WINNING_SCORE} times to win this match.
+
 MSG
 
 def prompt(str)
@@ -29,10 +36,8 @@ def validate_h_or_s
   loop do
     ans = gets.chomp
     return ans if ans.downcase.start_with?('h', 's')
-    prompt <<-MSG
-    Please respond with either H (hit) or S (stay). If you need to see
-    the instructions again, please type I.
-    MSG
+    prompt "Please respond with either H (hit) or S (stay). If you need to see"\
+    " the instructions again, please type I."
 
     puts INSTRUCTIONS if ans.downcase.start_with?('i')
     prompt "Would you like to hit (H) or stay (S)?"
@@ -40,7 +45,7 @@ def validate_h_or_s
 end
 
 def validate_s
-  prompt "The dealer must have at least 17 points to stay so you must hit."
+  prompt "The dealer must have at least #{DEALER_MIN} points to stay."
 
   loop do
     prompt "Please press H when you are ready to hit."
@@ -75,24 +80,23 @@ def card_desc(card)
   "#{value} of #{suit}"
 end
 
-def display_cards(player_hand, other_hand, whose_turn)
+def display_cards(player_hand, dealer_hand, whose_turn)
   cards = []
-  other_cards = []
+  dealer_cards = []
   player_hand.each { |card| cards.push(card_desc(card)) }
-  other_hand.each { |card| other_cards.push(card_desc(card)) }
+  dealer_hand.each { |card| dealer_cards.push(card_desc(card)) }
 
   if cards.length == 2
     puts "You, the #{whose_turn}, are dealt the " + cards.first + \
-         " and the " + cards.last
+         " and the " + cards.last + "."
   else
     puts "You, the #{whose_turn}, now have the " + joinor(cards)
   end
 
   if whose_turn == 'player'
-    puts "The dealer has two cards, one of which is the " \
-    + card_desc(other_hand.first)
+    puts "The dealer has the " + card_desc(dealer_hand.first) + " and ?."
   else
-    puts "The player stayed with the following cards: " + joinor(other_cards)
+    puts "The player stayed with the following cards: " + joinor(dealer_cards)
   end
 end
 
@@ -108,94 +112,155 @@ def total_cards(hand)
            else
              value.to_i
            end
-    sum
   end
 
   values.select { |value| value == "Ace" }.count.times do
-    sum -= 10 if sum > 21
+    sum -= 10 if sum > MAX_ALLOWED_POINTS
   end
   sum
 end
 
 def bust?(hand)
   total = total_cards(hand)
-  total > 21
+  total > MAX_ALLOWED_POINTS
 end
 
-def display_winner(p_hand, d_hand)
-  if total_cards(p_hand) == total_cards(d_hand)
-    prompt "It's a tie!"
+def detect_result(player_hand, dealer_hand)
+  player_total = total_cards(player_hand)
+  dealer_total = total_cards(dealer_hand)
+
+  if player_total > 21
+    :player_busted
+  elsif dealer_total > 21
+    :dealer_busted
+  elsif dealer_total < player_total
+    :player
+  elsif dealer_total > player_total
+    :dealer
   else
-    winner = total_cards(p_hand) > total_cards(d_hand) ? "player" : "dealer"
-    if winner == "player"
-      prompt "The #{winner} won this round with #{total_cards(p_hand)}"
-    else
-      prompt "The #{winner} won this round with #{total_cards(d_hand)}"
-    end
+    :tie
   end
 end
 
-prompt "Thank you for playing Twenty-One."
+def display_winner(player_hand, dealer_hand)
+  result = detect_result(player_hand, dealer_hand)
+  player_total = total_cards(player_hand)
+  dealer_total = total_cards(dealer_hand)
+
+  case result
+  when :player_busted
+    prompt "The player busted with #{player_total} points! Dealer wins."
+  when :dealer_busted
+    prompt "The dealer busted with #{dealer_total}! Player wins."
+  when :player
+    prompt "The player won this round with #{player_total} points."
+  when :dealer
+    prompt "The dealer won this round with #{dealer_total} points."
+  when :tie
+    prompt "It's a tie!"
+  end
+end
+
+def update_scores(player_hand, dealer_hand, score)
+  result = detect_result(player_hand, dealer_hand)
+
+  case result
+  when :player_busted
+    score[:dealer] += 1
+  when :dealer_busted
+    score[:player] += 1
+  when :player
+    score[:player] += 1
+  when :dealer
+    score[:dealer] += 1
+  end
+end
+
+system('clear') || system('cls')
+prompt "Welcome to Twenty-One."
 
 puts INSTRUCTIONS
 
 loop do
-  prompt "Please press S when you are ready to start."
-  start_answer = gets.chomp
-  break if start_answer.downcase.start_with?('s')
-end
-
-loop do
-  dealt_cards = []
-  player_hand = []
-  dealer_hand = []
-
-  player_hand.push(deal_card(dealt_cards), deal_card(dealt_cards))
-  dealer_hand.push(deal_card(dealt_cards), deal_card(dealt_cards))
-
+  score = { player: 0, dealer: 0 }
+  
   loop do
-    system('clear') || system('cls')
-    display_cards(player_hand, dealer_hand, 'player')
-    prompt "Would you like to hit or stay? (Please type H or S)"
-    ans = validate_h_or_s
-    break if ans.start_with?('s')
-    player_hand.push(deal_card(dealt_cards))
-
-    if bust?(player_hand)
-      system('clear') || system('cls')
-      display_cards(player_hand, dealer_hand, 'player')
-      break
-    end
+    prompt "Please press S when you are ready to start the round."
+    start_answer = gets.chomp
+    break if start_answer.downcase.start_with?('s')
   end
 
-  if bust?(player_hand)
-    prompt "Too bad! You've busted with #{total_cards(player_hand)}. The dealer wins this game."
-  else
-    prompt "You've chosen to stay. Now it's the dealer's turn."
+  loop do
+    dealt_cards = []
+    player_hand = []
+    dealer_hand = []
+
+    player_hand.push(deal_card(dealt_cards), deal_card(dealt_cards))
+    dealer_hand.push(deal_card(dealt_cards), deal_card(dealt_cards))
 
     loop do
-      break if bust?(dealer_hand)
       system('clear') || system('cls')
-      display_cards(dealer_hand, player_hand, 'dealer')
+      display_cards(player_hand, dealer_hand, 'player')
       prompt "Would you like to hit or stay? (Please type H or S)"
-      next_move_ans = validate_h_or_s
+      ans = validate_h_or_s
+      break if ans.start_with?('s')
+      player_hand.push(deal_card(dealt_cards))
 
-      if next_move_ans.downcase.start_with?('s')
-        if total_cards(dealer_hand) >= 17
-          break
-        else
-          validate_s
-        end
+      if bust?(player_hand)
+        system('clear') || system('cls')
+        display_cards(player_hand, dealer_hand, 'player')
+        break
       end
-
-      dealer_hand.push(deal_card(dealt_cards))
     end
 
-    if bust?(dealer_hand)
-      display_cards(dealer_hand, player_hand, 'dealer')
-      prompt "Too bad! You've busted with #{total_cards(dealer_hand)}. The player wins this game."
-    else
+    if bust?(player_hand)
+      puts "        ----------------------------------"
       display_winner(player_hand, dealer_hand)
+    else
+      system('clear') || system('cls')
+      prompt "The player has chosen to stay. Now it's the dealer's turn."
+      puts "        ----------------------------------"
+
+      loop do
+        break if bust?(dealer_hand)
+        display_cards(dealer_hand, player_hand, 'dealer')
+        prompt "Would you like to hit or stay? (Please enter H or S)"
+        next_move_ans = validate_h_or_s
+
+        if next_move_ans.downcase.start_with?('s')
+          if total_cards(dealer_hand) >= DEALER_MIN
+            break
+          else
+            validate_s
+          end
+        end
+
+        dealer_hand.push(deal_card(dealt_cards))
+      end
+
+      if bust?(dealer_hand)
+        display_cards(dealer_hand, player_hand, 'dealer')
+        puts "        ----------------------------------"
+      end
+      display_winner(player_hand, dealer_hand)
+    end
+
+    update_scores(player_hand, dealer_hand, score)
+    if score[:player] == WINNING_SCORE
+      prompt "The player has won #{WINNING_SCORE} rounds and wins the match."
+      break
+    elsif score[:dealer] == WINNING_SCORE
+      prompt "The dealer has won #{WINNING_SCORE} rounds and wins the match."
+      break
+    end
+
+    prompt "The player has won #{score[:player]} rounds and the dealer has won"\
+           " #{score[:dealer]} rounds."
+
+    loop do
+      prompt "Please press S when you are ready to start the next round."
+      start_answer = gets.chomp
+      break if start_answer.downcase.start_with?('s')
     end
   end
 
