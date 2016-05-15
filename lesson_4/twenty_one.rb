@@ -1,13 +1,13 @@
 
 DECK = [['Hearts', 'Diamonds', 'Spades', 'Clubs'],
-        ['2', '3', '4', '5', '6', \
+        ['2', '3', '4', '5', '6',
          '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']].freeze
 
-MAX_ALLOWED_POINTS = 21.freeze
-DEALER_MIN = 17.freeze
-WINNING_SCORE = 5.freeze
+MAX_ALLOWED_POINTS = 21
+DEALER_MIN = 17
+WINNING_SCORE = 5
 
-INSTRUCTIONS = <<-MSG
+INSTRUCTIONS = <<-MSG.freeze
 
 Both the player and the dealer will begin with two cards.
 The player will see both of their cards and will see one of the dealer's.
@@ -44,7 +44,7 @@ def validate_h_or_s
   end
 end
 
-def validate_s
+def validate_stay_request
   prompt "The dealer must have at least #{DEALER_MIN} points to stay."
 
   loop do
@@ -55,13 +55,12 @@ def validate_s
 end
 
 def deal_card(dealt_cards)
-  card_coordinates = []
-  card = ''
+  card = []
 
   loop do
-    card = card_coordinates.push(rand(4), rand(13))
+    card = [rand(4), rand(13)]
     break unless dealt_cards.include?(card)
-    card_coordinates = []
+    card = []
   end
 
   dealt_cards.push(card)
@@ -74,29 +73,31 @@ def joinor(array, seperator=', ', conjunction='and the')
   all_but_last + conjunction + " " + array.last
 end
 
-def card_desc(card)
-  suit = DECK[0][card.first]
-  value = DECK[1][card.last]
-  "#{value} of #{suit}"
+def hand_described_as_string(hand)
+  cards = []
+  hand.each do |card|
+    suit = DECK[0][card.first]
+    value = DECK[1][card.last]
+    cards.push("#{value} of #{suit}")
+  end
+  cards
 end
 
-def display_cards(player_hand, dealer_hand, whose_turn)
-  cards = []
-  dealer_cards = []
-  player_hand.each { |card| cards.push(card_desc(card)) }
-  dealer_hand.each { |card| dealer_cards.push(card_desc(card)) }
+def display_cards(current_player_hand, other_hand, whose_turn)
+  current_player_cards = hand_described_as_string(current_player_hand)
+  other_cards = hand_described_as_string(other_hand)
 
-  if cards.length == 2
-    puts "You, the #{whose_turn}, are dealt the " + cards.first + \
-         " and the " + cards.last + "."
+  if current_player_cards.length == 2
+    puts "You, the #{whose_turn}, are dealt the " + current_player_cards.first\
+         + " and the " + current_player_cards.last + "."
   else
-    puts "You, the #{whose_turn}, now have the " + joinor(cards)
+    puts "You, the #{whose_turn}, now have the " + joinor(current_player_cards)
   end
 
   if whose_turn == 'player'
-    puts "The dealer has the " + card_desc(dealer_hand.first) + " and ?."
+    puts "The dealer has the " + other_cards.first + " and ?."
   else
-    puts "The player stayed with the following cards: " + joinor(dealer_cards)
+    puts "The player stayed with the following cards: " + joinor(other_cards)
   end
 end
 
@@ -129,13 +130,14 @@ def detect_result(player_hand, dealer_hand)
   player_total = total_cards(player_hand)
   dealer_total = total_cards(dealer_hand)
 
-  if player_total > 21
+  case
+  when player_total > 21
     :player_busted
-  elsif dealer_total > 21
+  when dealer_total > 21
     :dealer_busted
-  elsif dealer_total < player_total
+  when dealer_total < player_total
     :player
-  elsif dealer_total > player_total
+  when dealer_total > player_total
     :dealer
   else
     :tie
@@ -165,14 +167,10 @@ def update_scores(player_hand, dealer_hand, score)
   result = detect_result(player_hand, dealer_hand)
 
   case result
-  when :player_busted
+  when :player_busted, :dealer
     score[:dealer] += 1
-  when :dealer_busted
+  when :dealer_busted, :player
     score[:player] += 1
-  when :player
-    score[:player] += 1
-  when :dealer
-    score[:dealer] += 1
   end
 end
 
@@ -183,7 +181,7 @@ puts INSTRUCTIONS
 
 loop do
   score = { player: 0, dealer: 0 }
-  
+
   loop do
     prompt "Please press S when you are ready to start the round."
     start_answer = gets.chomp
@@ -213,10 +211,7 @@ loop do
       end
     end
 
-    if bust?(player_hand)
-      puts "        ----------------------------------"
-      display_winner(player_hand, dealer_hand)
-    else
+    unless bust?(player_hand)
       system('clear') || system('cls')
       prompt "The player has chosen to stay. Now it's the dealer's turn."
       puts "        ----------------------------------"
@@ -228,11 +223,7 @@ loop do
         next_move_ans = validate_h_or_s
 
         if next_move_ans.downcase.start_with?('s')
-          if total_cards(dealer_hand) >= DEALER_MIN
-            break
-          else
-            validate_s
-          end
+          total_cards(dealer_hand) >= DEALER_MIN ? break : validate_stay_request
         end
 
         dealer_hand.push(deal_card(dealt_cards))
@@ -240,10 +231,11 @@ loop do
 
       if bust?(dealer_hand)
         display_cards(dealer_hand, player_hand, 'dealer')
-        puts "        ----------------------------------"
       end
-      display_winner(player_hand, dealer_hand)
     end
+
+    puts "        ----------------------------------"
+    display_winner(player_hand, dealer_hand)
 
     update_scores(player_hand, dealer_hand, score)
     if score[:player] == WINNING_SCORE
